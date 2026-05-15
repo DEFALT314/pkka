@@ -770,7 +770,7 @@ discord:
     <table>
       <tr><th>Rola</th><th>Aktor z US</th><th>Uprawnienia</th></tr>
       <tr><td><code>user</code></td><td>Zalogowany użytkownik</td><td>Składanie wniosku o dołączenie, przeglądanie statusu, linkowanie konta Discord</td></tr>
-      <tr><td><code>verified-alumn</code></td><td>Zweryfikowany alumn</td><td>Lista alumnów, materiały, wydarzenia, edycja profilu, koła zainteresowań</td></tr>
+      <tr><td><code>verified-alumn</code></td><td>Zweryfikowany alumn</td><td>Lista alumnów, materiały, wydarzenia, edycja profilu, grupy tematyczne</td></tr>
       <tr><td><code>admin</code></td><td>Administrator</td><td>Panel administracyjny, weryfikacja wniosków, tworzenie wydarzeń, ankiety, statystyki</td></tr>
       <tr><td><code>bot</code></td><td>Bot Discord</td><td>Service account — synchronizacja ról, powiadamianie o wydarzeniach</td></tr>
     </table>
@@ -782,7 +782,7 @@ discord:
     <table>
       <tr><th>Grupa</th><th>Role przypisane do grupy</th><th>Kto trafia do grupy</th></tr>
       <tr><td><code>users</code></td><td><code>user</code></td><td>Domyślna grupa — każdy nowo zarejestrowany użytkownik (ustaw jako Default Group)</td></tr>
-      <tr><td><code>alumni</code></td><td><code>user</code>, <code>verified-alumn</code></td><td>Alumnus po pozytywnym rozpatrzeniu wniosku przez admina</td></tr>
+      <tr><td><code>alumni</code></td><td><code>user</code>, <code>verified-alumn</code></td><td>Alumn po pozytywnym rozpatrzeniu wniosku przez admina</td></tr>
       <tr><td><code>administrators</code></td><td><code>user</code>, <code>verified-alumn</code>, <code>admin</code></td><td>Pracownicy wydziału / zarząd klubu</td></tr>
       <tr><td><code>bots</code></td><td><code>bot</code></td><td>Service account bota Discord</td></tr>
     </table>
@@ -792,13 +792,13 @@ discord:
     <table>
       <tr><th>Role name</th><th>Description</th></tr>
       <tr><td><code>user</code></td><td>Zarejestrowany użytkownik platformy</td></tr>
-      <tr><td><code>verified-alumn</code></td><td>Zweryfikowany alumnus AGH</td></tr>
+      <tr><td><code>verified-alumn</code></td><td>Zweryfikowany alumn AGH</td></tr>
       <tr><td><code>admin</code></td><td>Administrator platformy</td></tr>
       <tr><td><code>bot</code></td><td>Konto serwisowe bota Discord</td></tr>
     </table>
 
     <h3>Jak utworzyć grupy w Keycloak</h3>
-    <p>Sidebar → <strong>Groups</strong> → <strong>Create group</strong> → po zapisaniu wejdź w grupę → zakładka <strong>Role mapping</strong> → przypisz role:</p>
+    <p>Sidebar → <strong>Groups</strong> → <strong>Create group</strong> → po zapisaniu wejdź w grupę → zakładka <strong>Role mapping</strong> → przypisz odpowiednie role (Filter by realm roles).</p>
     <div class="callout info"><div class="callout-icon"></div><div>Żeby każdy nowo zarejestrowany użytkownik automatycznie trafił do grupy <code>users</code>: <strong>Realm Settings → zakładka General → Default Groups</strong> → dodaj <code>users</code>.</div></div>
 
     <h3>Niezalogowany użytkownik — brak sesji Keycloaka, brak cookies</h3>
@@ -817,7 +817,7 @@ discord:
       <tr><td>Status wniosku, linkowanie Discord</td><td><code>user</code></td></tr>
       <tr><td>Lista alumnów, profile, materiały, wydarzenia</td><td><code>verified-alumn</code></td></tr>
       <tr><td>Edycja własnego profilu</td><td><code>verified-alumn</code></td></tr>
-      <tr><td>Koła zainteresowań</td><td><code>verified-alumn</code></td></tr>
+      <tr><td>Grupy tematyczne</td><td><code>verified-alumn</code></td></tr>
       <tr><td>Panel administracyjny, weryfikacja wniosków</td><td><code>admin</code></td></tr>
       <tr><td>Tworzenie wydarzeń, ankiety, statystyki</td><td><code>admin</code></td></tr>
       <tr><td>Synchronizacja Discord, powiadomienia</td><td><code>bot</code></td></tr>
@@ -1207,9 +1207,13 @@ Content-Type: application/json
 
     <p>Pełny przepływ od kliknięcia "Zaloguj" do aktywnej sesji Spring Security. Dotyczy logowania emailem/hasłem przez Keycloak — wariant z Discordem opisany osobno poniżej.</p>
 
-    <div class="callout warn"><div class="callout-icon"></div><div>
-      <strong>Korekta: <code>code_challenge</code> nie jest wysyłany domyślnie.</strong><br>
-      PKCE (<code>code_challenge</code> / <code>code_verifier</code>) jest dodawany przez Spring Security automatycznie wyłącznie dla <strong>publicznych klientów</strong> (<code>client-authentication-method: none</code>). Ten projekt używa <strong>confidential client</strong> (ustawione <code>Client authentication = ON</code> + client_secret) — Spring domyślnie nie dołącza PKCE. Wysyłane są tylko <code>state</code> i <code>nonce</code>. Jeśli chcesz wymusić PKCE dla confidential client, patrz uwaga na końcu sekcji.
+    <figure class="screenshot">
+      <img src="imgs/pkce-flow.png" alt="PKCE S256 - przepływ">
+      <figcaption>PKCE S256 — code_challenge w żądaniu autoryzacji i code_verifier przy wymianie na token</figcaption>
+    </figure>
+
+    <div class="callout success"><div class="callout-icon"></div><div>
+      <strong>PKCE S256 jest włączone dla klienta <code>pkka-app</code>.</strong> Spring dołącza <code>code_challenge</code> w kroku autoryzacji i <code>code_verifier</code> przy wymianie na token.
     </div></div>
 
     <h3>Krok 1 — Inicjacja przez Spring</h3>
@@ -1219,9 +1223,9 @@ Content-Type: application/json
       <tr><th>Parametr</th><th>Przykład</th><th>Uwagi</th></tr>
       <tr><td><code>state</code></td><td><code>abc123xyz</code></td><td>Losowy token CSRF — weryfikowany przy callbacku</td></tr>
       <tr><td><code>nonce</code></td><td><code>def456uvw</code></td><td>Losowy token OIDC — wbudowany w ID token, weryfikowany przez Spring</td></tr>
-      <tr><td><code>code_challenge</code></td><td>—</td><td>❌ Nie wysyłany dla confidential client (bez jawnej konfiguracji PKCE)</td></tr>
+      <tr><td><code>code_challenge</code></td><td><code>mQ8s5...S256</code></td><td>PKCE S256 — wysyłane do Keycloaka</td></tr>
     </table>
-    <p>Spring zapisuje <code>state</code> i <code>nonce</code> w sesji HTTP (lub cookie), po czym odpowiada <code>302 Found</code>:</p>
+    <p>Spring zapisuje <code>state</code>, <code>nonce</code> i <code>code_verifier</code> w sesji HTTP (lub cookie), po czym odpowiada <code>302 Found</code>:</p>
     <div class="flow"><span class="box">Browser</span>    GET /oauth2/authorization/keycloak
     <span class="arrow">→</span>
 <span class="box">Spring</span>     302 Location: http://localhost:8081/realms/pkka/protocol/openid-connect/auth
@@ -1230,7 +1234,9 @@ Content-Type: application/json
                &amp;redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Flogin%2Foauth2%2Fcode%2Fkeycloak
                &amp;scope=openid+profile+email
                &amp;state=abc123xyz
-               &amp;nonce=def456uvw</div>
+               &amp;nonce=def456uvw
+               &amp;code_challenge=mQ8s5...S256
+               &amp;code_challenge_method=S256</div>
 
     <h3>Krok 2 — Autoryzacja w Keycloak</h3>
     <pre><code>GET http://localhost:8081/realms/pkka/protocol/openid-connect/auth?...</code></pre>
@@ -1256,7 +1262,8 @@ Content-Type: application/x-www-form-urlencoded
 
 grant_type=authorization_code
 &amp;code=AUTH_CODE
-&amp;redirect_uri=http://localhost:8080/login/oauth2/code/keycloak</code></pre>
+&amp;redirect_uri=http://localhost:8080/login/oauth2/code/keycloak
+&amp;code_verifier=R2K9...verifier</code></pre>
 
     <div class="callout info"><div class="callout-icon"></div><div>
       <strong>Metoda uwierzytelniania klienta (<code>client-authentication-method</code>):</strong><br>
@@ -1268,7 +1275,7 @@ grant_type=authorization_code
   <span class="str">"access_token"</span>:  <span class="str">"eyJhb..."</span>,   <span class="cm">// Keycloak JWT — używany do wywołań API backendu</span>
   <span class="str">"id_token"</span>:      <span class="str">"eyJhb..."</span>,   <span class="cm">// JWT z danymi użytkownika (sub, email, nonce)</span>
   <span class="str">"refresh_token"</span>: <span class="str">"eyJhb..."</span>,   <span class="cm">// używany do odświeżania AT przez Spring</span>
-  <span class="str">"token_type"</span>:    <span class="str">"Bearer"</span>,
+  <span class="str">"token_type"</span>:    <span class="str">"Bearer"</span>
   <span class="str">"expires_in"</span>:    <span class="num">300</span>            <span class="cm">// domyślnie 5 minut</span>
 }</code></pre>
 
@@ -1311,30 +1318,6 @@ grant_type=authorization_code
     <div class="callout success"><div class="callout-icon"></div><div>
       Spring Boot <strong>nie widzi Discorda</strong> — z jego perspektywy to identyczny Authorization Code Flow jak przy logowaniu emailem. Różnica jest tylko wewnątrz Keycloaka. Po stronie Spring: zawsze Keycloak JWT.
     </div></div>
-
-    <h3>Opcjonalnie — wymuszenie PKCE dla confidential client</h3>
-    <p>PKCE (RFC 7636) dla confidential client nie jest wymagane specyfikacją, ale stanowi dodatkową warstwę ochrony przed przechwyceniem authorization code. Aby włączyć:</p>
-    <p><strong>Po stronie Keycloaka</strong> (wymusza PKCE od klienta):<br>
-    <strong>Clients → pkka-app → Advanced → PKCE Code Challenge Method → S256</strong></p>
-    <p><strong>Po stronie Spring</strong> (dodaje code_challenge do requestu):</p>
-    <pre><code><span class="cm"># application.yml — dodaj pod registration.keycloak:</span>
-client-authentication-method: client_secret_basic
-<span class="cm"># Oraz skonfiguruj resolver (wymagany bean w SecurityConfig):</span></code></pre>
-    <pre><code><span class="cm">// SecurityConfig.java</span>
-<span class="kw">@Bean</span>
-<span class="kw">public</span> OAuth2AuthorizationRequestResolver pkceResolver(
-        ClientRegistrationRepository repo) {
-
-    DefaultOAuth2AuthorizationRequestResolver resolver =
-        <span class="kw">new</span> DefaultOAuth2AuthorizationRequestResolver(
-            repo, <span class="str">"/oauth2/authorization"</span>);
-
-    resolver.setAuthorizationRequestCustomizer(
-        OAuth2AuthorizationRequestCustomizers.withPkce());
-
-    <span class="kw">return</span> resolver;
-}</code></pre>
-    <div class="callout warn"><div class="callout-icon"></div><div>Jeśli włączysz <code>PKCE Code Challenge Method = S256</code> po stronie Keycloaka bez odpowiedniej konfiguracji Spring, logowanie przestanie działać — Keycloak odrzuci requesty bez <code>code_challenge</code>. Włączaj razem.</div></div>
   </section>
 
   <!-- CUSTOM LOGIN THEME -->
